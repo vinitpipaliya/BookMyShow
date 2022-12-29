@@ -1,0 +1,27 @@
+{
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "body-parser": "^1.20.1",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-validator": "^6.14.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.8.0",
+    "mongoose-reverse-populate": "^1.1.0",
+    "multer": "^1.4.5-lts.1",
+    "node": "^19.2.0",
+    "nodemon": "^2.0.20",
+    "path": "^0.12.7"
+  },
+  "name": "book-my-show",
+  "version": "1.0.0",
+  "description": "This Proram is created for learning API,database,models,etc.",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon app.js",
+    "test": "START SERVER"
+  },
+  "author": "V R PIPALIYA",
+  "license": "ISC"
+}
