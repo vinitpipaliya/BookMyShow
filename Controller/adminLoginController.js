@@ -430,8 +430,16 @@ exports.viewData = (req, res) => {
                                             localField: "_id",
                                             foreignField: "movie_id",
                                             as: "bookings",
-                                            pipeline: [{ $project: { seat: 1, date: 1, _id: 1, user_id: 1, name: 1 } }],
-                                        }
+                                            pipeline: [{ $project: { seat: 1, date: 1, _id: 1, user_id: 1, name: 1 } }, {
+                                                $lookup: {
+                                                    from: "users",
+                                                    localField: "user_id",
+                                                    foreignField: "_id",
+                                                    as: "users"
+                                                }
+                                            }],
+                                        },
+
                                     }],
                                 }
                             },],
