@@ -6,6 +6,7 @@ const screenModel = require("../Model/screenModel")
 const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
 const { validationResult } = require("express-validator")
+const { default: mongoose } = require("mongoose")
 
 exports.userLogin = (req, res) => {
     try {
@@ -76,18 +77,101 @@ exports.addBooking = (req, res) => {
                 error: errors.array()[0].msg
             })
         }
-        const data = req.body
-        const bookMod = new bookingModel(data)
-        bookMod.save((err, data) => {
+        const data1 = req.body
+        const bookMod = new bookingModel(data1)
+        bookMod.save(async (err, abc) => {
             if (err) {
                 return res.status(400).json({
                     err: "Not able to save in database. " + err
                 })
             }
             else {
-                return res.status(200).json({
-                    message: "Booking Succerssfull."
+                // var abc = []
+                // bookingModel.aggregate([
+                //     {
+                //         $lookup: {
+                //             from: "movies",
+                //             localField: "movie_id",
+                //             foreignField: "_id",
+                //             as: "movies",
+                //             pipeline: [{ $project: { name: 1, screen_id: 1 } },
+                //             {
+                //                 $lookup: {
+                //                     from: "screens",
+                //                     localField: "screen_id",
+                //                     foreignField: "_id",
+                //                     as: "screens",
+                //                 },
+                //             }, {
+                //                 $project: {
+                //                     screens: 1
+                //                 }
+                //             }
+                //             ]
+                //         },
+
+                //     }
+                // ]).exec(async (err, data) => {
+                //     if (err) {
+                //         return err
+                //     }
+                //     else {
+                //         return abc.push(data)
+                //     }
+                // })
+                // console.log(abc)
+                // return res.status(200).json({
+                //     message: "Booking Succerssfull."
+                // })
+                console.log("krishna1")
+                movieModel.findOne({ _id: data1.movie_id }, (err, data) => {
+                    if (err) {
+                        return res.status(400).json({
+                            err: err
+                        })
+                    }
+                    else {
+                        screenModel.findOne({ _id: data.screen_id }, async (err, data) => {
+                            if (err) {
+                                return res.json({
+                                    err: err
+                                })
+                            }
+                            else {
+                                if (data.capacity >= 1) {
+                                    if (data1.seat <= data.capacity) {
+                                        data.capacity = data.capacity - data1.seat
+                                        screenModel.findByIdAndUpdate({ _id: data._id }, { capacity: data.capacity }, (err, data) => {
+                                            if (err) {
+                                                return res.json({
+                                                    err: err
+                                                })
+                                            }
+                                            else {
+                                                return res.json({
+                                                    message: "Sucessfully Booked.",
+                                                    DATA: data
+                                                })
+                                            }
+                                        })
+
+                                    }
+                                    else {
+                                        return res.json({
+                                            err: "SOlD OUT!!!"
+                                        })
+                                    }
+                                }
+                                else {
+                                    return res.json({
+                                        err: "SOlD OUT!!!"
+                                    })
+                                }
+                            }
+                        })
+                    }
                 })
+
             }
         })
     }
@@ -132,37 +216,6 @@ exports.viewBooking = (req, res) => {
                     })
                 }
             })
-
-        // let aa = bookingModel.aggregate([
-        //     { $match: { _id: { '$in': [_id] } } }, // convertInto is arrays of sold clothId which I got from Shopify
-        //     {
-        //         $lookup:
-        //         {
-        //             from: "users",
-        //             localField: "_id",
-        //             foreignField: "user_id",
-        //             as: "users"
-        //         }
-        //     },
-        //     {
-        //         $lookup:
-        //         {
-        //             from: "movies",
-        //             localField: "_id",
-        //             foreignField: "movie_id",
-        //             as: "movies"
-        //         },
-        //     },
-        //     {
-        //         "$project": {
-        //             "seat": 1,
-        //             "users": 1,
-        //             "movies": 1, // dont get anything
-        //         }
-        //     },
-        // ]
-        // )
-        // res.json(aa);
     }
     catch (err) {
         console.log(err)
@@ -175,13 +228,40 @@ exports.viewBooking = (req, res) => {
 exports.updateBooking = (req, res) => {
     try {
         const data = req.body
-        bookingModel.findOneAndUpdate({ _id: data._id }, data, (err, data) => {
+        bookingModel.findOneAndUpdate({ _id: data._id }, data, (err, data1) => {
             if (err) {
                 return res.status(400).json({
                     err: "Not able to update. " + err
                 })
             }
             else {
+                movieModel.findOne({ _id: data._id }, (err, data) => {
+                    if (err) {
+                        return res.json({
+                            err: err
+                        })
+                    }
+                    else {
+                        screenModel.findOne({ _id: data._id }, (err, data) => {
+                            if (err) {
+                                return res.json({
+                                    err: err
+                                })
+                            }
+                            else {
+                                if (data.caoacity >= 1) {
+                                    if (data1.seat <= data.capacity) {
+
+                                    }
+                                }
+                                screenModel.findByIdAndUpdate({ _id: data._id })
+                                return res.json({
+
+                                })
+                            }
+                        })
+                    }
+                })
                 return res.status(200).send({
                     message: "Successully Updated. "
                 })

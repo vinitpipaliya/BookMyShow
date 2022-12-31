@@ -9,7 +9,8 @@ router.post('/', userLogin)
 router.post('/booking', [
     check("seat", "Seat should be more than 0").notEmpty().isInt({ min: 1, max: 1000 }),
     check("date", "proper date").notEmpty()//.isDate()
-], checkUserLogin, addBooking)
+], checkUserLogin)
+router.post('/book', addBooking)
 router.get('/booking', viewBooking)
 
 module.exports = router
