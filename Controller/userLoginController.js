@@ -2,11 +2,10 @@ const userModel = require("../Model/userModel")
 const bookingModel = require("../Model/bookingModel")
 const movieModel = require("../Model/movieModel")
 const screenModel = require("../Model/screenModel")
-
 const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
 const { validationResult } = require("express-validator")
-const { default: mongoose } = require("mongoose")
+const { pipeline } = require("stream")
 
 exports.userLogin = (req, res) => {
     try {
@@ -158,13 +157,13 @@ exports.addBooking = (req, res) => {
                                     }
                                     else {
                                         return res.json({
-                                            err: "SOlD OUT!!!"
+                                            err: "SOLD OUT!!!"
                                         })
                                     }
                                 }
                                 else {
                                     return res.json({
-                                        err: "SOlD OUT!!!"
+                                        err: "SOLD OUT!!!"
                                     })
                                 }
                             }
@@ -249,7 +248,7 @@ exports.updateBooking = (req, res) => {
                                 })
                             }
                             else {
-                                if (data.caoacity >= 1) {
+                                if (data.capacity >= 1) {
                                     if (data1.seat <= data.capacity) {
 
                                     }
@@ -293,5 +292,138 @@ exports.deleteBooking = (req, res) => {
     }
     catch (err) {
 
+    }
+}
+
+exports.addBookingWithAgg = (req, res) => {
+    try {
+        const data1 = req.body
+        const bookMod = new bookingModel(data1)
+        bookMod.save((err, data) => {
+            if (err) {
+                return res.json({
+                    err: err
+                })
+            }
+            else {
+                bookingModel.aggregate([
+                    {
+                        $match: { "_id": data._id }
+                    },
+                    {
+                        $lookup: {
+                            from: "movies",
+                            localField: "movie_id",
+                            foreignField: "_id",
+                            as: "movies",
+                            pipeline: [{ $project: { screen_id: 1 } }, {
+                                $lookup: {
+                                    from: "screens",
+                                    localField: "screen_id",
+                                    foreignField: "_id",
+                                    as: "screens",
+                                    pipeline: [{ $project: { capacity: 1 } }]
+                                }
+                            }]
+                        }
+                    },
+                    {
+                        $project: {
+                            seat: 1,
+                            movies: 1,
+                            screens: 1
+                        }
+                    },
+                ]).exec((err, data) => {
+                    if (err) {
+                        console.log(err)
+                        return res.status(400).json({
+                            err: "Not able to find in database. " + err
+                        })
+                    }
+                    else {
+                        screenModel.updateOne(
+                            {
+                                _id: data[0].movies[0].screens[0]._id
+                            },
+                            {
+                                $inc: { capacity: -data1.seat }
+                            }
+                        ).exec((err, data) => {
+                            if (err) {
+                                return res.json({
+                                    err: err
+                                })
+                            }
+                            else {
+                                return res.status(200).send({
+                                    message: "Successfully Booked.",
+                                    DATA: data
+                                })
+                            }
+                        })
+
+                    }
+                })
+            }
+        })
+    }
+    catch (err) {
+        console.log(err)
+        return res.status(400).json({
+            Problem: "Problem " + err
+        })
+    }
+}
+
+exports.cancelBookingWithAgg = (req, res) => {
+    try {
+        const { _id } = req.body
+        bookingModel.aggregate([
+            {
+                $match: { "_id": _id }
+            },
+            {
+                $lookup: {
+                    from: "movies",
+                    localField: "movies_id",
+                    foreignField: "_id",
+                    as: "movies",
+                    pipeline: [{ $project: { screen_id: 1 } }, {
+                        $lookup: {
+                            from: "screens",
+                            localField: "screen_id",
+                            foreignField: "_id",
+                            as: "screens"
+                        }
+                    }]
+                }
+            },
+            {
+                $project: {
+                    seat: 1,
+                    movies: 1,
+                    screens: 1
+                }
+            }
+        ]).exec((err, data) => {
+            if (err) {
+                return res.json({
+                    err: err
+                })
+            }
+            else {
+                bookingModel.updateOne(
+                    {
+
+                    }
+                )
+            }
+        })
+    }
+    catch (err) {
+        return res.status(400).json({
+            err: "Problem :" + err
+        })
     }
 }
