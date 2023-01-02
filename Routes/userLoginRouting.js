@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { check } = require("express-validator")
-const { userLogin, sendAnyFile, addBooking, viewBooking } = require("../Controller/userLoginController");
+const { userLogin, sendAnyFile, addBooking, viewBooking, addBookingWithAgg } = require("../Controller/userLoginController");
 const { checkUserLogin } = require("../Middleware/userLoginMiddleware");
 
 router.post('/', userLogin)
@@ -10,7 +10,7 @@ router.post('/booking', [
     check("seat", "Seat should be more than 0").notEmpty().isInt({ min: 1, max: 1000 }),
     check("date", "proper date").notEmpty()//.isDate()
 ], checkUserLogin)
-router.post('/book', addBooking)
+router.post('/book', addBookingWithAgg)//addBooking
 router.get('/booking', viewBooking)
 
 module.exports = router
