@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
 const { validationResult } = require("express-validator")
 const { pipeline } = require("stream")
+const { default: mongoose } = require("mongoose")
 
 exports.userLogin = (req, res) => {
     try {
@@ -379,14 +380,15 @@ exports.addBookingWithAgg = (req, res) => {
 exports.cancelBookingWithAgg = (req, res) => {
     try {
         const { _id } = req.body
+        // bookingModel.find({ _id: data._id })
         bookingModel.aggregate([
             {
-                $match: { "_id": _id }
+                $match: { _id: new mongoose.Types.ObjectId(_id) }
             },
             {
                 $lookup: {
                     from: "movies",
-                    localField: "movies_id",
+                    localField: "movie_id",
                     foreignField: "_id",
                     as: "movies",
                     pipeline: [{ $project: { screen_id: 1 } }, {
@@ -394,7 +396,8 @@ exports.cancelBookingWithAgg = (req, res) => {
                             from: "screens",
                             localField: "screen_id",
                             foreignField: "_id",
-                            as: "screens"
+                            as: "screens",
+                            pipeline: [{ $project: { capacity: 1 } }]
                         }
                     }]
                 }
@@ -406,20 +409,44 @@ exports.cancelBookingWithAgg = (req, res) => {
                     screens: 1
                 }
             }
-        ]).exec((err, data) => {
-            if (err) {
-                return res.json({
-                    err: err
-                })
-            }
-            else {
-                bookingModel.updateOne(
-                    {
-
-                    }
-                )
-            }
-        })
+        ])
+            .exec((err, data) => {
+                if (err) {
+                    return res.json({
+                        err: err
+                    })
+                }
+                else {
+                    screenModel.updateOne(
+                        {
+                            _id: data[0].movies[0].screens[0]._id
+                        },
+                        {
+                            $inc: { capacity: data[0].seat }
+                        }
+                    ).exec((err, data) => {
+                        if (err) {
+                            return res.status(400).json({
+                                err: "screen is not found."
+                            })
+                        }
+                        else {
+                            bookingModel.findByIdAndRemove({ _id: _id }, (err, data) => {
+                                if (err) {
+                                    return res.status(400).json({
+                                        err: "Not able to find booking. " + err
+                                    })
+                                }
+                                else {
+                                    return res.status(200).send({
+                                        message: "Successfully canceled."
+                                    })
+                                }
+                            })
+                        }
+                    })
+                }
+            })
     }
     catch (err) {
         return res.status(400).json({
