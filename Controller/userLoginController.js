@@ -345,7 +345,7 @@ exports.addBookingWithAgg = (req, res) => {
                     else {
                         screenModel.updateOne(
                             {
-                                _id: data[0].movies[0].screens[0]._id
+                                _id: data[0].movies[0].screens[0]._id,
                             },
                             {
                                 $inc: { capacity: -data1.seat }
@@ -451,6 +451,78 @@ exports.cancelBookingWithAgg = (req, res) => {
     catch (err) {
         return res.status(400).json({
             err: "Problem :" + err
+        })
+    }
+}
+
+exports.addBookingWithCond = async (req, res) => {
+    try {
+        const data = req.body
+        await movieModel.aggregate([
+            {
+                $match: { "_id": mongoose.Types.ObjectId(data.movie_id) }
+            },
+            {
+                $lookup: {
+                    from: "screens",
+                    localField: "screen_id",
+                    foreignField: "_id",
+                    as: "screens",
+                    pipeline: [{ $project: { capacity: 1 } }]
+                }
+            },
+            {
+                $project: {
+                    screens: 1
+                }
+            }
+        ]).exec(async (err, data1) => {
+            if (err) {
+                return res.json({
+                    err: err
+                })
+            }
+            else {
+                console.log(data.seat)
+                await screenModel.aggregate([
+                    {
+                        $match: { $and: [{ _id: data1[0].screens[0]._id }] }
+                    },
+                    {
+                        $set: { capacity: -data.seat }
+                    }
+                    // {
+                    //     $inc: { capacity: -data.seat }
+                    // }
+                ]).exec(async (err, data2) => {
+                    if (err) {
+                        console.log(err)
+                        return res.json({
+                            err: err
+                        })
+                    }
+                    else {
+                        const bookMod = new bookingModel(data)
+                        await bookMod.save((err, data) => {
+                            if (err) {
+                                return res.json({
+                                    err: err
+                                })
+                            }
+                            else {
+                                return res.send({
+                                    message: "Successfully Bookend ."
+                                })
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    }
+    catch (err) {
+        return res.status(400).json({
+            err: "Not able to save in database. " + err
         })
     }
 }

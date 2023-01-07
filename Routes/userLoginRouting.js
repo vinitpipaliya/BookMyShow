@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { check } = require("express-validator")
-const { userLogin, sendAnyFile, addBooking, viewBooking, addBookingWithAgg, cancelBookingWithAgg } = require("../Controller/userLoginController");
+const { userLogin, sendAnyFile, addBooking, viewBooking, addBookingWithAgg, addBookingWithCond, cancelBookingWithAgg } = require("../Controller/userLoginController");
 const { checkUserLogin } = require("../Middleware/userLoginMiddleware");
 
 router.post('/', userLogin)
@@ -13,5 +13,6 @@ router.post('/booking', [
 router.post('/book', addBookingWithAgg)//addBooking
 router.get('/booking', viewBooking)
 router.post('/cancel', cancelBookingWithAgg)
+router.post('/bookWithCond', addBookingWithCond)
 
 module.exports = router
